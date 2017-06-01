@@ -2,9 +2,20 @@
 // Created by shawn on 23/05/17.
 //
 #pragma once
-#include <wchar.h>    // NULL macro
+#include <stdlib.h>    // NULL macro
+
+#define DEBUG
+
+#ifdef DEBUG
 #define MAXLISTCOUNT 2
 #define MAXLISTSIZE 4
+#endif
+
+#ifndef DEBUG
+#define MAXLISTCOUNT 10
+#define MAXLISTSIZE 10
+#endif
+
 
 //-------------------------------------------------------------------------------------------------
 //---------------------------------- Data Structure Declarations ----------------------------------
@@ -17,6 +28,7 @@ typedef struct node {
     struct node *next;
     struct node *prev;
     int boolActive;
+    struct list *belong;    // necessary for efficient ListRemove() and other searching functionalities
 } node;
 
 typedef struct list {
