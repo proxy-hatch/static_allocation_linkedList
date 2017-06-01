@@ -87,7 +87,7 @@ void *ListLast(list *aList) {
 void *ListNext(list *aList) {
     // error check
     if (!aList->boolActive || (!aList->head != !aList->tail) ||
-        ((aList->curr < nodePool || aList->curr > nodePool + MAXLISTCOUNT * MAXLISTSIZE + 1) && aList->curr))
+        ((aList->curr < nodePool || aList->curr >= nodePool + MAXLISTCOUNT * MAXLISTSIZE + 2) && aList->curr))
         return (void *) 1;
 
     // declare ptr variable to return
@@ -128,7 +128,7 @@ void *ListNext(list *aList) {
 void *ListPrev(list *aList) {
     // error check
     if (!aList->boolActive || (!aList->head != !aList->tail) ||
-        ((aList->curr < nodePool || aList->curr > nodePool + MAXLISTCOUNT * MAXLISTSIZE + 1) && aList->curr))
+        ((aList->curr < nodePool || aList->curr >= nodePool + MAXLISTCOUNT * MAXLISTSIZE + 2) && aList->curr))
         return (void *) 1;
 
     // declare ptr variable to return
@@ -183,7 +183,7 @@ int ListAdd(list *aList, void *anItem) {
     // DONT KNOW WHERE TO INSERT!
     if (!aList->curr && aList->head) // && !aList->tail)
         return -1;
-    if ((aList->curr < nodePool || aList->curr > nodePool + MAXLISTCOUNT * MAXLISTSIZE + 1) && aList->curr &&
+    if ((aList->curr < nodePool || aList->curr >= nodePool + MAXLISTCOUNT * MAXLISTSIZE + 2) && aList->curr &&
         aList->head)
         return -1;
 
@@ -242,7 +242,7 @@ int ListInsert(list *aList, void *anItem) {
     // DONT KNOW WHERE TO INSERT!
     if (!aList->curr && aList->head) // && !aList->tail)
         return -1;
-    if ((aList->curr < nodePool || aList->curr > nodePool + MAXLISTCOUNT * MAXLISTSIZE + 1) && aList->curr &&
+    if ((aList->curr < nodePool || aList->curr >= nodePool + MAXLISTCOUNT * MAXLISTSIZE + 2) && aList->curr &&
         aList->head)
         return -1;
 
@@ -358,7 +358,7 @@ void listPrint(list *aList) {
     node *tempPtr2 = aList->curr;
     int ii = 0;
 
-    while (tempPtr2 != aList->head && tempPtr2 > nodePool && tempPtr2 < nodePool + MAXLISTCOUNT * MAXLISTSIZE + 1 &&
+    while (tempPtr2 != aList->head && tempPtr2 >= nodePool && tempPtr2 < nodePool + MAXLISTCOUNT * MAXLISTSIZE + 2 &&
            tempPtr2) {
         tempPtr2 = tempPtr2->prev;
         ii++;
