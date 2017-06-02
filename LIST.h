@@ -7,8 +7,9 @@
 #define DEBUG
 
 #ifdef DEBUG
-#define MAXLISTCOUNT 2
-#define MAXLISTSIZE 4
+#define MAXLISTCOUNT 3
+#define MAXNODECOUNT 4
+#include <stdio.h>  // for printf();
 #endif
 
 #ifndef DEBUG
@@ -28,23 +29,23 @@ typedef struct node {
     struct node *next;
     struct node *prev;
     int boolActive;
-    struct list *belong;    // necessary for efficient ListRemove() and other searching functionalities
-} node;
+    struct listADT *belong;    // necessary for efficient ListRemove() and other searching functionalities
+} node, list;   // the alias "list" is given because when the user refers to a 'list', he is actually referring to a listADT->head, hence a node object
 
-typedef struct list {
+typedef struct listADT {
     node *head;
     node *tail;
     node *curr;
     int nodeCount;
     int boolActive;
-} list;
+} listADT;
 
 //-------------------------------------------------------------------------------------------------
 //---------------------------------- Implementation Declarations ----------------------------------
 //-------------------------------------------------------------------------------------------------
 
 // makes a new, empty list, and returns its reference on success. Returns a NULL pointer on failure.
-list *ListCreate();
+node *ListCreate();
 
 // returns the number of items in list.
 int ListCount(const list *aList);
@@ -87,7 +88,7 @@ void *ListRemove(list *aList);
 
 // adds list2 to the end of list1. The current pointer is set to the current pointer of list1.
 // List2 no longer exists after the operation.
-void ListConcat(list list1, list list2);
+void ListConcat(list *list1, list *list2);
 
 // delete list. itemFree is a pointer to a routine that frees an item. It should be invoked (within ListFree) as:
 // (*itemFree)(itemToBeFreed);

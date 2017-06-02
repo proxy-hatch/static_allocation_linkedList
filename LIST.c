@@ -3,9 +3,7 @@
 //
 
 #pragma once
-#ifdef DEBUG
-#include <stdio.h>  // for listPrint();
-#endif
+
 
 #include "LIST.h"
 
@@ -28,13 +26,13 @@ int numLists = 0;
 
 // initialize nodePool array
 // TWO extra slots in the end are reserved to represent BEFORE and AFTER status of list::curr
-// e.g., if(aList.curr==aList.head){ *ListPrev(aList) results in aList.curr=&(nodePool[MAXLISTCOUNT * MAXLISTSIZE + 1]) }
+// e.g., if(aList.curr==aList.head){ *ListPrev(aList) results in aList.curr=&(nodePool[MAXNODECOUNT + 1]) }
 // these last two slots should be IMMUTABLE
-node nodePool[MAXLISTCOUNT * MAXLISTSIZE + 2] = {[0 ... MAXLISTCOUNT * MAXLISTSIZE + 1].data=NULL,
-        [0 ... MAXLISTCOUNT * MAXLISTSIZE + 1].next=NULL, [0 ... MAXLISTCOUNT * MAXLISTSIZE + 1].prev=NULL, [0 ...
-        MAXLISTCOUNT * MAXLISTSIZE + 1].belong=NULL,
-        [0 ... MAXLISTCOUNT * MAXLISTSIZE - 1].boolActive=0, [MAXLISTCOUNT * MAXLISTSIZE ...
-        MAXLISTCOUNT * MAXLISTSIZE + 1].boolActive=1};
+node nodePool[MAXNODECOUNT + 2] = {[0 ... MAXNODECOUNT + 1].data=NULL,
+        [0 ... MAXNODECOUNT + 1].next=NULL, [0 ... MAXNODECOUNT + 1].prev=NULL, [0 ...
+        MAXNODECOUNT + 1].belong=NULL,
+        [0 ... MAXNODECOUNT - 1].boolActive=0, [MAXNODECOUNT ...
+        MAXNODECOUNT + 1].boolActive=1};
 
 // variable to keep the number of nodes USED
 int numNodes = 0;
@@ -86,10 +84,10 @@ void *ListLast(list *aList) {
 void *ListNext(list *aList) {
     // error check
     if (!aList || !aList->boolActive || !aList->head != !aList->tail || !aList->curr || !aList->curr->boolActive ||
-        ((aList->curr < nodePool || aList->curr >= nodePool + MAXLISTCOUNT * MAXLISTSIZE + 2) && aList->curr))
+        ((aList->curr < nodePool || aList->curr >= nodePool + MAXNODECOUNT + 2) && aList->curr))
         return NULL;
     if ((aList->head && aList->head->belong != aList) || (aList->tail && aList->tail->belong != aList) ||
-        (aList->curr >= nodePool && aList->curr < nodePool + MAXLISTCOUNT * MAXLISTSIZE &&
+        (aList->curr >= nodePool && aList->curr < nodePool + MAXNODECOUNT &&
          aList->curr->belong != aList))
         return NULL;
     // declare ptr variable to return
@@ -97,17 +95,17 @@ void *ListNext(list *aList) {
 
     // curr at tail, make curr go out of bounds in the tail direction
     if (aList->curr == aList->tail) {
-        aList->curr = nodePool + MAXLISTCOUNT * MAXLISTSIZE + 1;
+        aList->curr = nodePool + MAXNODECOUNT + 1;
         returnVar = NULL;
     }// if curr was out of bounds in the head direction, bring it back to head
-    else if (aList->curr == nodePool + MAXLISTCOUNT * MAXLISTSIZE) {
+    else if (aList->curr == nodePool + MAXNODECOUNT) {
         aList->curr = aList->head;
         if (aList->head)
             returnVar = aList->head->data;
         else
             returnVar = NULL;
     }// if curr was out of bounds in the tail direction, keep the curr ptr there and return NULL
-    else if (aList->curr == nodePool + MAXLISTCOUNT * MAXLISTSIZE + 1) {
+    else if (aList->curr == nodePool + MAXNODECOUNT + 1) {
         returnVar = NULL;
     } else {
         aList->curr = aList->curr->next;
@@ -121,10 +119,10 @@ void *ListNext(list *aList) {
 void *ListPrev(list *aList) {
     // error check
     if (!aList || !aList->boolActive || (!aList->head != !aList->tail) || !aList->curr || !aList->curr->boolActive ||
-        ((aList->curr < nodePool || aList->curr >= nodePool + MAXLISTCOUNT * MAXLISTSIZE + 2) && aList->curr))
+        ((aList->curr < nodePool || aList->curr >= nodePool + MAXNODECOUNT + 2) && aList->curr))
         return NULL;
     if ((aList->head && aList->head->belong != aList) || (aList->tail && aList->tail->belong != aList) ||
-        (aList->curr >= nodePool && aList->curr < nodePool + MAXLISTCOUNT * MAXLISTSIZE &&
+        (aList->curr >= nodePool && aList->curr < nodePool + MAXNODECOUNT &&
          aList->curr->belong != aList))
         return NULL;
 
@@ -133,17 +131,17 @@ void *ListPrev(list *aList) {
 
     // curr at head, make curr go out of bounds in the head direction
     if (aList->curr == aList->head) {
-        aList->curr = nodePool + MAXLISTCOUNT * MAXLISTSIZE;
+        aList->curr = nodePool + MAXNODECOUNT;
         returnVar = NULL;
     }// if curr was out of bounds in the tail direction, bring it back to tail
-    else if (aList->curr == nodePool + MAXLISTCOUNT * MAXLISTSIZE + 1) {
+    else if (aList->curr == nodePool + MAXNODECOUNT + 1) {
         aList->curr = aList->tail;
         if (aList->tail)
             returnVar = aList->tail->data;
         else
             returnVar = NULL;
     }// if curr was out of bounds in the head direction, keep the curr ptr there and return NULL
-    else if (aList->curr == nodePool + MAXLISTCOUNT * MAXLISTSIZE) {
+    else if (aList->curr == nodePool + MAXNODECOUNT) {
         returnVar = NULL;
     } else {
         aList->curr = aList->curr->prev;
@@ -156,7 +154,7 @@ void *ListPrev(list *aList) {
 void *ListCurr(list *aList) {
     return aList && aList->boolActive && !(!aList->head != !aList->tail) && aList->curr && aList->curr->boolActive &&
            aList->curr >= nodePool &&
-           aList->curr < nodePool + MAXLISTCOUNT * MAXLISTSIZE && aList->curr->belong == aList
+           aList->curr < nodePool + MAXNODECOUNT && aList->curr->belong == aList
            ? aList->curr->data : NULL;
 }
 
@@ -169,19 +167,19 @@ int ListAdd(list *aList, void *anItem) {
         return -1;
 
     if ((aList->head && aList->head->belong != aList) || (aList->tail && aList->tail->belong != aList) ||
-        (aList->curr >= nodePool && aList->curr < nodePool + MAXLISTCOUNT * MAXLISTSIZE &&
+        (aList->curr >= nodePool && aList->curr < nodePool + MAXNODECOUNT &&
          aList->curr->belong != aList))
         return NULL;
 
     // additional error checks: curr ptr is invalid, but list is not empty: ERROR
     // DONT KNOW WHERE TO INSERT!
-    if ((!aList->curr || aList->curr < nodePool || aList->curr >= nodePool + MAXLISTCOUNT * MAXLISTSIZE + 2) &&
+    if ((!aList->curr || aList->curr < nodePool || aList->curr >= nodePool + MAXNODECOUNT + 2) &&
         aList->head)
         return -1;
 
     // pull new node from nodePool
-    // Check if theres available node (should always be available because nodePool size is determined by MAXLISTCOUNT*MAXLISTSIZE && if list is filled
-    if (numNodes > MAXLISTCOUNT * MAXLISTSIZE - 2 || aList->nodeCount >= MAXLISTSIZE)
+    // Check if theres available node (should always be available because nodePool size is determined by MAXNODECOUNT && if list is filled
+    if (numNodes > MAXNODECOUNT - 1)
         return -1;  // No empty node in nodePool
     node *newNodePtr = nodePool + numNodes++;
     newNodePtr->data = anItem;
@@ -196,13 +194,13 @@ int ListAdd(list *aList, void *anItem) {
         aList->tail = newNodePtr;
         aList->curr = newNodePtr;
     } // out of bounds in the tail direction
-    else if (aList->curr == nodePool + MAXLISTCOUNT * MAXLISTSIZE + 1) {
+    else if (aList->curr == nodePool + MAXNODECOUNT + 1) {
         aList->tail->next = newNodePtr;
         newNodePtr->prev = aList->tail;
         aList->tail = newNodePtr;
         aList->curr = newNodePtr;
     }// out of bounds in the head direction
-    else if (aList->curr == nodePool + MAXLISTCOUNT * MAXLISTSIZE) {
+    else if (aList->curr == nodePool + MAXNODECOUNT) {
         aList->head->prev = newNodePtr;
         newNodePtr->next = aList->head;
         aList->head = newNodePtr;
@@ -232,19 +230,19 @@ int ListInsert(list *aList, void *anItem) {
         return -1;
 
     if ((aList->head && aList->head->belong != aList) || (aList->tail && aList->tail->belong != aList) ||
-        (aList->curr >= nodePool && aList->curr < nodePool + MAXLISTCOUNT * MAXLISTSIZE &&
+        (aList->curr >= nodePool && aList->curr < nodePool + MAXNODECOUNT &&
          aList->curr->belong != aList))
         return NULL;
 
     // additional error checks: curr is invalid, but list is not empty: ERROR
     // DONT KNOW WHERE TO INSERT!
-    if ((!aList->curr || aList->curr < nodePool || aList->curr >= nodePool + MAXLISTCOUNT * MAXLISTSIZE + 2) &&
+    if ((!aList->curr || aList->curr < nodePool || aList->curr >= nodePool + MAXNODECOUNT + 2) &&
         aList->head)
         return -1;
 
     // pull new node from nodePool
     // Check if theres available node && if list is filled
-    if (numNodes > MAXLISTCOUNT * MAXLISTSIZE - 2 || aList->nodeCount >= MAXLISTSIZE)
+    if (numNodes > MAXNODECOUNT - 1)
         return -1;
     node *newNodePtr = nodePool + numNodes++;
     newNodePtr->data = anItem;
@@ -259,13 +257,13 @@ int ListInsert(list *aList, void *anItem) {
         aList->tail = newNodePtr;
         aList->curr = newNodePtr;
     } // out of bounds in the tail direction
-    else if (aList->curr == nodePool + MAXLISTCOUNT * MAXLISTSIZE + 1) {
+    else if (aList->curr == nodePool + MAXNODECOUNT + 1) {
         aList->tail->next = newNodePtr;
         newNodePtr->prev = aList->tail;
         aList->tail = newNodePtr;
         aList->curr = newNodePtr;
     }// out of bounds in the head direction
-    else if (aList->curr == nodePool + MAXLISTCOUNT * MAXLISTSIZE) {
+    else if (aList->curr == nodePool + MAXNODECOUNT) {
         aList->head->prev = newNodePtr;
         newNodePtr->next = aList->head;
         aList->head = newNodePtr;
@@ -292,7 +290,7 @@ int ListAppend(list *aList, void *anItem) {
         return -1;
 
     if ((aList->head && aList->head->belong != aList) || (aList->tail && aList->tail->belong != aList) ||
-        (aList->curr >= nodePool && aList->curr < nodePool + MAXLISTCOUNT * MAXLISTSIZE &&
+        (aList->curr >= nodePool && aList->curr < nodePool + MAXNODECOUNT &&
          aList->curr->belong != aList))
         return NULL;
 
@@ -300,12 +298,12 @@ int ListAppend(list *aList, void *anItem) {
     // This is also an opportunity to have it bounce back to a non-error state
 //    // additional error checks: curr is invalid, but list is not empty: ERROR
 //    // DONT KNOW WHERE TO INSERT!
-//    if ((!aList->curr || aList->curr < nodePool || aList->curr >= nodePool + MAXLISTCOUNT * MAXLISTSIZE + 2)&& aList->head)
+//    if ((!aList->curr || aList->curr < nodePool || aList->curr >= nodePool + MAXNODECOUNT + 2)&& aList->head)
 //        return -1;
 
     // pull new node from nodePool
     // Check if theres available node && if list is filled
-    if (numNodes > MAXLISTCOUNT * MAXLISTSIZE - 2 || aList->nodeCount >= MAXLISTSIZE)
+    if (numNodes > MAXNODECOUNT - 1)
         return -1;
 
     node *newNodePtr = nodePool + numNodes++;
@@ -336,7 +334,7 @@ int ListPrepend(list *aList, void *anItem) {
     if (!aList || !aList->boolActive || (!aList->head != !aList->tail))
         return -1;
     if ((aList->head && aList->head->belong != aList) || (aList->tail && aList->tail->belong != aList) ||
-        (aList->curr >= nodePool && aList->curr < nodePool + MAXLISTCOUNT * MAXLISTSIZE &&
+        (aList->curr >= nodePool && aList->curr < nodePool + MAXNODECOUNT &&
          aList->curr->belong != aList))
         return NULL;
 
@@ -345,12 +343,12 @@ int ListPrepend(list *aList, void *anItem) {
     // This is also an opportunity to have it bounce back to a non-error state
 //    // additional error checks: curr is invalid, but list is not empty: ERROR
 //    // DONT KNOW WHERE TO INSERT!
-//    if ((!aList->curr || aList->curr < nodePool || aList->curr >= nodePool + MAXLISTCOUNT * MAXLISTSIZE + 2)&& aList->head)
+//    if ((!aList->curr || aList->curr < nodePool || aList->curr >= nodePool + MAXNODECOUNT + 2)&& aList->head)
 //        return -1;
 
     // pull new node from nodePool
     // Check if theres available node && if list is filled
-    if (numNodes > MAXLISTCOUNT * MAXLISTSIZE - 2 || aList->nodeCount >= MAXLISTSIZE)
+    if (numNodes > MAXNODECOUNT - 1)
         return -1;
 
     node *newNodePtr = nodePool + numNodes++;
@@ -378,10 +376,10 @@ int ListPrepend(list *aList, void *anItem) {
 // Return current item and take it out of list. Make the next item the current one.
 void *ListRemove(list *aList) {
     // error check: not active || one of the head/tail missing || numNodes recorded greater than threshold
-    if (!aList || !aList->boolActive || (!aList->head != !aList->tail) || numNodes > MAXLISTCOUNT * MAXLISTSIZE - 1)
+    if (!aList || !aList->boolActive || (!aList->head != !aList->tail) || numNodes > MAXNODECOUNT)
         return NULL;
     if ((aList->head && aList->head->belong != aList) || (aList->tail && aList->tail->belong != aList) ||
-        (aList->curr >= nodePool && aList->curr < nodePool + MAXLISTCOUNT * MAXLISTSIZE &&
+        (aList->curr >= nodePool && aList->curr < nodePool + MAXNODECOUNT &&
          aList->curr->belong != aList))
         return NULL;
 
@@ -415,30 +413,30 @@ void *ListRemove(list *aList) {
     // if not, copy the last node to the deletion node to fill hole,
     // make sure the list and all its nodes that refers to this moved mode are adjusted to refer to the new memory location,
     // and delete the last node
-    node *oldAddressOfAffectedList = nodePool + numNodes - 1;
-    if (aList->curr != oldAddressOfAffectedList) {
+    node *oldAddressOfAffectedNode = nodePool + numNodes - 1;
+    if (aList->curr != oldAddressOfAffectedNode && oldAddressOfAffectedNode->boolActive) {
         // change the content of curr to that of the affectedList
-        *aList->curr = *oldAddressOfAffectedList;
+        *aList->curr = *oldAddressOfAffectedNode;
         // get affectedList address
-        list *affectedList =oldAddressOfAffectedList->belong;
+        list *affectedList = oldAddressOfAffectedNode->belong;
         // adjust list properties
-        if (affectedList->head == oldAddressOfAffectedList)
+        if (affectedList->head == oldAddressOfAffectedNode)
             affectedList->head = aList->curr;
-        if (affectedList->tail == oldAddressOfAffectedList)
+        if (affectedList->tail == oldAddressOfAffectedNode)
             affectedList->tail = aList->curr;
-        if (affectedList->curr == oldAddressOfAffectedList)
+        if (affectedList->curr == oldAddressOfAffectedNode)
             affectedList->curr = aList->curr;
         // adjust node links
-        if (oldAddressOfAffectedList->prev)
-            oldAddressOfAffectedList->prev->next = aList->curr;
-        if (oldAddressOfAffectedList->next)
-            oldAddressOfAffectedList->next->prev = aList->curr;
+        if (oldAddressOfAffectedNode->prev)
+            oldAddressOfAffectedNode->prev->next = aList->curr;
+        if (oldAddressOfAffectedNode->next)
+            oldAddressOfAffectedNode->next->prev = aList->curr;
     }
-    oldAddressOfAffectedList->boolActive = 0;
-    oldAddressOfAffectedList->data = NULL;
-    oldAddressOfAffectedList->next = NULL;
-    oldAddressOfAffectedList->prev = NULL;
-    oldAddressOfAffectedList->belong = NULL;
+    oldAddressOfAffectedNode->boolActive = 0;
+    oldAddressOfAffectedNode->data = NULL;
+    oldAddressOfAffectedNode->next = NULL;
+    oldAddressOfAffectedNode->prev = NULL;
+    oldAddressOfAffectedNode->belong = NULL;
     numNodes--; // assumption: this will never be negative
     aList->nodeCount--;
 
@@ -451,8 +449,69 @@ void *ListRemove(list *aList) {
 
 // adds list2 to the end of list1. The current pointer is set to the current pointer of list1.
 // List2 no longer exists after the operation.
-void ListConcat(list list1, list list2) {
+void ListConcat(list *list1, list *list2) {
+    // error check: not active || one of the head/tail missing || numNodes recorded greater than threshold
+    if (!list1 || !list1->boolActive || (!list1->head != !list1->tail) || numNodes > MAXNODECOUNT)
+        return;
+    if (!list2 || !list2->boolActive || (!list2->head != !list2->tail))
+        return;
+    if ((list1->head && list1->head->belong != list1) || (list1->tail && list1->tail->belong != list1))
+        return;
+    if ((list2->head && list2->head->belong != list2) || (list2->tail && list2->tail->belong != list2))
+        return;
 
+    list1->nodeCount += list2->nodeCount;
+    if (list1->head && list2->head) // && list1->tail&& list2->tail
+    {
+        list1->tail->next = list2->head;
+        list2->head->prev = list1->tail;
+        list1->tail=list2->tail;
+    } else if (list2->head) // && list1->tail && !list2->tail && !list2->head
+    {
+        list1->head = list2->head;
+        list1->tail = list2->tail;
+    }
+    // else: either only list 2 is empty or both are empty. Do nothing
+
+    // change the belong column of each node in list2
+    node *tempNodePtr = list2->head;
+    while (tempNodePtr) {
+#ifdef DEBUG
+        if (tempNodePtr->belong != list2)
+            printf("\nWARNING: node with data %d does not belong to list2! It belongs to list with head data = %d\n",
+                   *(int *) tempNodePtr->data, *(int *) tempNodePtr->belong->head->data);
+#endif //DEBUG
+        tempNodePtr->belong = list1;
+        tempNodePtr = tempNodePtr->next;
+    }
+
+    // delete list2
+    // check if list being deleted is at the end of the "used" section of lists[]
+    // if not, copy the last list to the deletion list memory location to fill hole,
+    // make sure all the nodes that refer to this list are adjusted to refer to the new memory location,
+    // and delete the last list
+    list *oldAddressOfAffectedList = lists + numLists - 1;
+    if (list2 != oldAddressOfAffectedList && oldAddressOfAffectedList->boolActive) {
+        // change the content of list2 to that of the affectedList
+        *list2 = *oldAddressOfAffectedList;
+        // adjust node references
+        tempNodePtr = oldAddressOfAffectedList->head;
+        while (tempNodePtr) {
+#ifdef DEBUG
+            if (tempNodePtr->belong != oldAddressOfAffectedList)
+                printf("\nWARNING: node with data %d does not belong to list2! It belongs to list with head data = %d\n",
+                       *(int *) tempNodePtr->data, *(int *) tempNodePtr->belong->head->data);
+#endif //DEBUG
+            tempNodePtr->belong = list2;
+        }
+    }
+    oldAddressOfAffectedList->boolActive = 0;
+    oldAddressOfAffectedList->tail = NULL;
+    oldAddressOfAffectedList->nodeCount = 0;
+    oldAddressOfAffectedList->curr = NULL;
+    oldAddressOfAffectedList->head = NULL;
+
+    numLists--; // assumption: this will never be negative
 }
 
 // delete list. itemFree is a pointer to a routine that frees an item. It should be invoked (within ListFree) as:
@@ -479,6 +538,13 @@ void *ListSearch(list *aList, void *comparator, void *comparisonArg) {
 }
 
 #ifdef DEBUG
+
+// debugging function used to print numNodes
+void printNumNodes() { printf("numNodes is %d\n", numNodes); }
+
+// debugging function used to print numNodes
+void printNumLists() { printf("numLists is %d\n", numLists); }
+
 // debugging function used to print list
 void listPrint(list *aList) {
     if (!aList) {
@@ -492,7 +558,10 @@ void listPrint(list *aList) {
     printf("Begin Print: \n");
     int i = 0;
     while (tempPtr) {
+        if(tempPtr==aList->tail&&tempPtr->next)
+            printf("\nWARNING: node %d is the recorded tail, but this->next!=NULL!!\n", i);
         printf("number %d: ", i);
+
         if (!tempPtr->belong)
             printf("\nWARNING: node %d have no BELONG column!!\n", i);
         else if (tempPtr->belong != aList)
@@ -511,21 +580,22 @@ void listPrint(list *aList) {
     node *tempPtr2 = aList->curr;
 
 
-    if (tempPtr2 >= nodePool && tempPtr2 < nodePool + MAXLISTCOUNT * MAXLISTSIZE &&
+    if (tempPtr2 >= nodePool && tempPtr2 < nodePool + MAXNODECOUNT &&
         tempPtr2) {
         int ii = 0;
-        while (tempPtr2 != aList->head) {
+        while (tempPtr2 && tempPtr2 != aList->head) {
             tempPtr2 = tempPtr2->prev;
             ii++;
         }
         printf("list->curr is now at position #%d (value: %d)\n\n", ii, *(int *) aList->curr->data);
-    } else if (tempPtr2 == nodePool + MAXLISTCOUNT * MAXLISTSIZE)
+    } else if (tempPtr2 == nodePool + MAXNODECOUNT)
         printf("list->curr is currently out of bounds in the HEAD direction\n\n");
-    else if (tempPtr2 == nodePool + MAXLISTCOUNT * MAXLISTSIZE + 1)
+    else if (tempPtr2 == nodePool + MAXNODECOUNT + 1)
         printf("list->curr is currently out of bounds in the TAIL direction\n\n");
     else if (!tempPtr2)
         printf("list->curr is NULL\n\n");
     else
         printf("list->curr is invalid. Address:  %d\n\n", (int) tempPtr2);
 }
-#endif
+
+#endif  //DEBUG

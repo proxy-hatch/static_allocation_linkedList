@@ -23,14 +23,14 @@ int main() {
     puts("ListCreate() tests\n\n");
     list *emptyList1=ListCreate();
     list *emptyList2=ListCreate();
-    list *emptyList3=ListCreate();
-    list *emptyList4=ListCreate();
-    list *emptyList5=ListCreate();
+    list *emptyList3;
+    list *emptyList4;
+    list *emptyList5;
     listPrint(emptyList1);
     listPrint(emptyList2);
-    listPrint(emptyList3);
-    listPrint(emptyList4);
-    listPrint(emptyList5);
+//    listPrint(emptyList3);
+//    listPrint(emptyList4);
+//    listPrint(emptyList5);
     puts("\n-----------------------------------------------------\n");
 //    //-----------------------------------------------------------------------------------------------------------------
 //    // ListNext(list *aList)/ListPrev(list *aList) tests
@@ -134,15 +134,15 @@ int main() {
 //    listPrint(emptyList1);
 //
 //    puts("\n-----------------------------------------------------\n");
-//    //-----------------------------------------------------------------------------------------------------------------
-//    // ListAdd(list *aList, void *anItem) test:
-//    puts("ListAdd(list *aList, void *anItem) tests\n\n");
-//    // - when list is empty - pass
-//    // - when curr!=tail - pass
-//    // - when curr==tail - pass
-//    // - when curr is invalid & list is not empty - pass
-//    // - when list is full - pass
-//    // - when nodePool is full - should not happen
+    //-----------------------------------------------------------------------------------------------------------------
+    // ListAdd(list *aList, void *anItem) test:
+    puts("ListAdd(list *aList, void *anItem) tests\n\n");
+    // - when list is empty - pass
+    // - when curr!=tail - pass
+    // - when curr==tail - pass
+    // - when curr is invalid & list is not empty - pass
+    // - when list is full - pass
+    // - when nodePool is full - pass
 //
 //    printf("ListAdd(%d) to emptyList1 returned %d\n",a,ListAdd(emptyList1,&a));
 //    listPrint(emptyList1);
@@ -152,6 +152,13 @@ int main() {
 //    listPrint(emptyList1);
 //    printf("ListAdd(%d) to emptyList1 returned %d\n",b,ListAdd(emptyList1,&b));
 //    listPrint(emptyList1);
+////    // test for overflowing nodePool
+////    printf("No more empty nodes in nodePool! ListAdd(%d) to emptyList1 returned %d\n",b,ListAdd(emptyList1,&b));
+////    listPrint(emptyList1);
+////    printNumNodes();
+////    printf("No more empty nodes in nodePool! ListInsert(%d) to emptyList1 returned %d\n",b,ListAdd(emptyList1,&b));
+////    listPrint(emptyList1);
+////    printNumNodes();
 //
 //    printf("ListAdd(%d) to emptyList2 returned %d\n",b,ListAdd(emptyList2,&b));
 //    listPrint(emptyList2);
@@ -192,8 +199,7 @@ int main() {
 //    puts("ListAppend(list *aList, void *anItem)/ListPrepend(list *aList, void *anItem)/ListRemove(list *aList) tests\n\n");
 //    // - when list is empty - pass/pass/pass
 //    // - when list has only 1 item - pass/pass/pass
-//    // - when list is full - pass/pass/pass
-//    // - when nodePool is full - should not happen
+//    // - when nodePool is full - pass/pass
 //    // ##for ListRemove(list *aList) ONLY:
 //    // ##- when curr==head - pass
 //    // ##- when curr==tail - pass
@@ -220,8 +226,10 @@ int main() {
 //    // list should be full now
 //    printf("list full, ListAppend(%d) returned: %d\n", a,ListAppend(emptyList1,&a));
 //    listPrint(emptyList1);
-//    printf("list full, ListAppend(%d) returned: %d\n", a,ListPrepend(emptyList1,&a));
+//    printNumNodes();
+//    printf("list full, ListPrepend(%d) returned: %d\n", a,ListPrepend(emptyList1,&a));
 //    listPrint(emptyList1);
+//    printNumNodes();
 //    // list full, curr @ tail
 //    printf("list full, curr @ tail ListRemove returned: %d\n", *(int*) ListRemove(emptyList1));
 //    listPrint(emptyList1);
@@ -260,6 +268,117 @@ int main() {
 //    //attempting to remove when curr @ out of bounds in tail direction
 //    printf("attempting to remove when curr @ out of bounds in tail direction, ListRemove returned: %d\n", ListRemove(emptyList2)?*(int*) ListRemove(emptyList2):0);
 //    listPrint(emptyList2);
+//    puts("\n-----------------------------------------------------\n");
+
+
+    //-----------------------------------------------------------------------------------------------------------------
+    // ListConcat(list *list1, list *list2) tests:
+    puts("ListConcat(list *list1, list *list2) tests\n\n");
+    // - when list1 is empty - pass
+    // - when list2 is empty - pass
+    // - when both empty - pass
+    // - when nodePool is full - pass
+    // - when there are other lists and swapping is required/not required - pass
+
+    // list1=list2=empty
+    ListConcat(emptyList1,emptyList2);
+    listPrint(emptyList1);
+    listPrint(emptyList2);
+    printNumNodes();
+    printNumLists();
+
+    // list1 empty, list2 non-empty
+    emptyList2=ListCreate();
+    ListAdd(emptyList2,&a);
+    listPrint(emptyList1);
+    listPrint(emptyList2);
+    printNumNodes();
+    printNumLists();
+    ListConcat(emptyList1,emptyList2);
+    listPrint(emptyList1);
+    listPrint(emptyList2);
+    printNumNodes();
+    printNumLists();
+
+    // list1 non-empty, list2 empty
+    emptyList2=ListCreate();
+    listPrint(emptyList1);
+    listPrint(emptyList2);
+    printNumNodes();
+    printNumLists();
+    ListConcat(emptyList1,emptyList2);
+    listPrint(emptyList1);
+    listPrint(emptyList2);
+    printNumNodes();
+    printNumLists();
+
+    //list1=list2=non-empty
+    emptyList2=ListCreate();
+    ListAdd(emptyList2,&b);
+    ListAdd(emptyList2,&c);
+    listPrint(emptyList1);
+    listPrint(emptyList2);
+    printNumNodes();
+    printNumLists();
+    ListConcat(emptyList1,emptyList2);
+    listPrint(emptyList1);
+    listPrint(emptyList2);
+    printNumNodes();
+    printNumLists();
+
+    //list1=list2=non-empty, @ the MAXNODECOUNT
+    emptyList2=ListCreate();
+    printf("ListAdd(%d) returned: %d\n", b,ListAppend(emptyList2,&b));
+    printf("ListAdd(%d) returned: %d\n", c,ListAppend(emptyList2,&c));
+    listPrint(emptyList1);
+    listPrint(emptyList2);
+    printNumNodes();
+    printNumLists();
+    ListConcat(emptyList1,emptyList2);
+    listPrint(emptyList1);
+    listPrint(emptyList2);
+    printNumNodes();
+    printNumLists();
+
+    //list1=list2=non-empty, other list exist, swapping
+    ListFirst(emptyList1);
+    ListRemove(emptyList1);
+    ListRemove(emptyList1);
+    emptyList2=ListCreate();
+    emptyList3=ListCreate();
+    ListAdd(emptyList2,&b);
+    ListAdd(emptyList3,&d);
+    listPrint(emptyList1);
+    listPrint(emptyList2);
+    listPrint(emptyList3);
+    printNumNodes();
+    printNumLists();
+    ListConcat(emptyList1,emptyList2);
+    listPrint(emptyList1);
+    listPrint(emptyList2);
+    listPrint(emptyList3);
+    printNumNodes();
+    printNumLists();
+
+//    //list1=list2=non-empty, other list exist, not swapping
+//    ListFirst(emptyList1);
+//    ListRemove(emptyList1);
+//    ListRemove(emptyList1);
+//    emptyList3=ListCreate();
+//    emptyList2=ListCreate();
+//    ListAdd(emptyList2,&b);
+//    ListAdd(emptyList3,&d);
+//    listPrint(emptyList1);
+//    listPrint(emptyList2);
+//    listPrint(emptyList3);
+//    printNumNodes();
+//    printNumLists();
+//    ListConcat(emptyList1,emptyList2);
+//    listPrint(emptyList1);
+//    listPrint(emptyList2);
+//    listPrint(emptyList3);
+//    printNumNodes();
+//    printNumLists();
 
 
 
