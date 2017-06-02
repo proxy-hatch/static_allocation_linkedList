@@ -4,17 +4,17 @@
 #pragma once
 #include <stdlib.h>    // NULL macro
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
-#define MAXLISTCOUNT 3
+#define MAXLISTCOUNT 4
 #define MAXNODECOUNT 4
 #include <stdio.h>  // for printf();
 #endif
 
 #ifndef DEBUG
 #define MAXLISTCOUNT 10
-#define MAXLISTSIZE 10
+#define MAXNODECOUNT 100
 #endif
 
 
@@ -29,23 +29,23 @@ typedef struct node {
     struct node *next;
     struct node *prev;
     int boolActive;
-    struct listADT *belong;    // necessary for efficient ListRemove() and other searching functionalities
-} node, list;   // the alias "list" is given because when the user refers to a 'list', he is actually referring to a listADT->head, hence a node object
+    struct list *belong;    // necessary for efficient ListRemove() and other searching functionalities
+} node;
 
-typedef struct listADT {
+typedef struct list {
     node *head;
     node *tail;
     node *curr;
     int nodeCount;
     int boolActive;
-} listADT;
+} list;
 
 //-------------------------------------------------------------------------------------------------
 //---------------------------------- Implementation Declarations ----------------------------------
 //-------------------------------------------------------------------------------------------------
 
 // makes a new, empty list, and returns its reference on success. Returns a NULL pointer on failure.
-node *ListCreate();
+list *ListCreate();
 
 // returns the number of items in list.
 int ListCount(const list *aList);
@@ -105,5 +105,6 @@ void *ListTrim(list *aList);
 // Exactly what constitutes a match is up to the implementor of comparator.
 // If a match is found, the current pointer is left at the matched item and the pointer to that item is returned.
 // If no match is found, the current pointer is left beyond the end of the list and a NULL pointer is returned.
-void *ListSearch(list *aList, void *comparator, void *comparisonArg);
+// Shawn's note: comparator is a pointer to a routine in testbench with parameter data1, data2; comparisonArg is data2
+void *ListSearch(list *aList, int (*comparator)(), void *comparisonArg);
 

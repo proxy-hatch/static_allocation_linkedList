@@ -22,7 +22,7 @@ list lists[MAXLISTCOUNT] = {[0 ... MAXLISTCOUNT - 1].head=NULL, [0 ... MAXLISTCO
                                                                                          1].boolActive=0};
 
 // variable to keep the number of lists USED
-int numLists = 0;
+int lastListPos = 0;
 
 // initialize nodePool array
 // TWO extra slots in the end are reserved to represent BEFORE and AFTER status of list::curr
@@ -37,6 +37,11 @@ node nodePool[MAXNODECOUNT + 2] = {[0 ... MAXNODECOUNT + 1].data=NULL,
 // variable to keep the number of nodes USED
 int numNodes = 0;
 
+// This array-based stack is used to keep track of the spare lists and the count of spare lists
+// when instantiating a new list, one must first look into this array for spare lists, if not found then create a new one at the end of the filled lists.
+list *spareLists[MAXLISTCOUNT] = {[0 ... MAXLISTCOUNT - 1]=NULL};
+int numSpareLists = 0;
+
 //-------------------------------------------------------------------------------------------------
 //---------------------------------- Implementation Definitions ----------------------------------
 //-------------------------------------------------------------------------------------------------
@@ -44,11 +49,20 @@ int numNodes = 0;
 // makes a new, empty list, and returns its reference on success. Returns a NULL pointer on failure.
 list *ListCreate() {
     // error check
-    if (numLists >= MAXLISTCOUNT)
+    if (lastListPos >= MAXLISTCOUNT)
         return NULL;
 
-    lists[numLists].boolActive = 1;
-    return &(lists[numLists++]);
+    if (numSpareLists) //try to find spare nodes first
+    {
+        list *returnList = spareLists[numSpareLists - 1];
+        returnList->boolActive = 1;
+        spareLists[numSpareLists - 1] = NULL;
+        numSpareLists--;
+        return returnList;
+    } else {
+        lists[lastListPos].boolActive = 1;
+        return &(lists[lastListPos++]);
+    }
 }
 
 // returns the number of items in list.
@@ -378,6 +392,7 @@ void *ListRemove(list *aList) {
     // error check: not active || one of the head/tail missing || numNodes recorded greater than threshold
     if (!aList || !aList->boolActive || (!aList->head != !aList->tail) || numNodes > MAXNODECOUNT)
         return NULL;
+    // head or tail doesnt belong to the list || curr ptr points to an effective node but does not belong to the list
     if ((aList->head && aList->head->belong != aList) || (aList->tail && aList->tail->belong != aList) ||
         (aList->curr >= nodePool && aList->curr < nodePool + MAXNODECOUNT &&
          aList->curr->belong != aList))
@@ -390,23 +405,25 @@ void *ListRemove(list *aList) {
         return NULL;
 
     int boolDeletingAtTail = aList->curr == aList->tail ? 1 : 0;
+    int boolDeletingAtHead = aList->curr == aList->head ? 1 : 0;
     // make a cpy of the node that is about to be deleted
     node deletionNode = *aList->curr;
     // adjust links but DO NOT MODIFY aList->curr
-    if (aList->head == aList->tail)    // ==aList->curr, only node
+    if (boolDeletingAtTail&&boolDeletingAtHead)    // only node
     {
         aList->head = NULL;
         aList->tail = NULL;
     } else if (boolDeletingAtTail) {
         aList->curr->prev->next = NULL;
         aList->tail = aList->curr->prev;
-    } else {
+    } else if (boolDeletingAtHead) {
+        aList->curr->next->prev = aList->head;
+        aList->head = aList->head->next;
+        aList->head->prev = NULL;
+    } // deleting in the middle
+    else {
+        aList->curr->prev->next = aList->curr->next;
         aList->curr->next->prev = aList->curr->prev;
-        if (aList->curr == aList->head) {
-            aList->head = aList->head->next;
-            aList->head->prev = NULL;
-        } else
-            aList->curr->prev->next = aList->curr->next;
     }
 
     // check if node being deleted is at the end of the "used" section of nodePool
@@ -440,10 +457,10 @@ void *ListRemove(list *aList) {
     numNodes--; // assumption: this will never be negative
     aList->nodeCount--;
 
-    if (boolDeletingAtTail)  // this should also cover the case when the deletionNode is the only one in aList
+    if (boolDeletingAtTail)  // this should also cover the case when the deletionNode is the only node in aList
         aList->curr = deletionNode.prev;
-    else
-        aList->curr = deletionNode.next;
+    else if (boolDeletingAtHead)
+        aList->curr = aList->head;  // head is already modified to the second node
     return deletionNode.data;
 }
 
@@ -465,13 +482,13 @@ void ListConcat(list *list1, list *list2) {
     {
         list1->tail->next = list2->head;
         list2->head->prev = list1->tail;
-        list1->tail=list2->tail;
+        list1->tail = list2->tail;
     } else if (list2->head) // && list1->tail && !list2->tail && !list2->head
     {
         list1->head = list2->head;
         list1->tail = list2->tail;
     }
-    // else: either only list 2 is empty or both are empty. Do nothing
+    // else: either only list 2 is empty or both are empty. Either way do nothing
 
     // change the belong column of each node in list2
     node *tempNodePtr = list2->head;
@@ -487,43 +504,74 @@ void ListConcat(list *list1, list *list2) {
 
     // delete list2
     // check if list being deleted is at the end of the "used" section of lists[]
-    // if not, copy the last list to the deletion list memory location to fill hole,
-    // make sure all the nodes that refer to this list are adjusted to refer to the new memory location,
-    // and delete the last list
-    list *oldAddressOfAffectedList = lists + numLists - 1;
-    if (list2 != oldAddressOfAffectedList && oldAddressOfAffectedList->boolActive) {
-        // change the content of list2 to that of the affectedList
-        *list2 = *oldAddressOfAffectedList;
-        // adjust node references
-        tempNodePtr = oldAddressOfAffectedList->head;
-        while (tempNodePtr) {
-#ifdef DEBUG
-            if (tempNodePtr->belong != oldAddressOfAffectedList)
-                printf("\nWARNING: node with data %d does not belong to list2! It belongs to list with head data = %d\n",
-                       *(int *) tempNodePtr->data, *(int *) tempNodePtr->belong->head->data);
-#endif //DEBUG
-            tempNodePtr->belong = list2;
-        }
+    // if not, record this spare list as a result of deletion into the spareLists[]
+    if (list2 != lists + lastListPos - 1) {
+        spareLists[numSpareLists++] = list2;
+    } else {
+        lastListPos--; // assumption: this will never be negative
     }
-    oldAddressOfAffectedList->boolActive = 0;
-    oldAddressOfAffectedList->tail = NULL;
-    oldAddressOfAffectedList->nodeCount = 0;
-    oldAddressOfAffectedList->curr = NULL;
-    oldAddressOfAffectedList->head = NULL;
-
-    numLists--; // assumption: this will never be negative
+    list2->boolActive = 0;
+    list2->tail = NULL;
+    list2->nodeCount = 0;
+    list2->curr = NULL;
+    list2->head = NULL;
 }
 
 // delete list. itemFree is a pointer to a routine that frees an item. It should be invoked (within ListFree) as:
-// (*itemFree)(itemToBeFreed)
+// (*itemFree)(itemToBeFreed) [[Note: equivalent to itemFree(itemToBeFreed)]]
 // Example: https://stackoverflow.com/questions/1789807/function-pointer-as-an-argument
 void ListFree(list *aList, void (*itemFree)()) {
+    // error check: not active || one of the head/tail missing || numNodes recorded greater than threshold
+    if (!aList || !aList->boolActive || (!aList->head != !aList->tail) || numNodes > MAXNODECOUNT)
+        return;
+    // head or tail doesnt belong to the list
+    if ((aList->head && aList->head->belong != aList) || (aList->tail && aList->tail->belong != aList))
+        return;
 
+    // we do not care where aList->curr is at initially
+    aList->curr=aList->head;    // in order to use ListRemove() from head
+    int boolExit=0;
+    while(aList->head&&!boolExit)
+    {
+        if(aList->head==aList->tail)    // prevent error deletion of incorrectly set up lists (aList->tail->next!=NULL)
+            boolExit=1;
+        if(aList->head->data)
+            (*itemFree)(aList->head->data);
+        ListRemove(aList);   //aList->curr is kept at head
+    }
+
+    // delete aList
+    // check if list being deleted is at the end of the "used" section of lists[]
+    // if not, record this spare list as a result of deletion into the spareLists[]
+    if (aList != lists + lastListPos - 1) {
+        spareLists[numSpareLists++] = aList;
+    } else {
+        lastListPos--; // assumption: this will never be negative
+    }
+    aList->boolActive = 0;
+    aList->tail = NULL;
+    aList->nodeCount = 0;
+    aList->curr = NULL;
+    aList->head = NULL;
 }
 
 // Return last item and take it out of list. Make the new last item the current one.
 void *ListTrim(list *aList) {
+    // error check: not active || one of the head/tail missing || empty list
+    if (!aList || !aList->boolActive || (!aList->head != !aList->tail)||!aList->head)
+        return NULL;
+    // head or tail doesnt belong to the list || curr ptr points to an effective node but does not belong to the list
+    if ((aList->head && aList->head->belong != aList) || (aList->tail && aList->tail->belong != aList) ||
+        (aList->curr >= nodePool && aList->curr < nodePool + MAXNODECOUNT &&
+         aList->curr->belong != aList))
+        return NULL;
+    // error check: clean tail
+    if(aList->tail->next)
+        return NULL;
 
+    // set curr to tail, call ListRemove()
+    aList->curr=aList->tail;
+    return ListRemove(aList);
 }
 
 // searches list starting at the current item until the end is reached or a match is found.
@@ -533,9 +581,33 @@ void *ListTrim(list *aList) {
 // Exactly what constitutes a match is up to the implementor of comparator.
 // If a match is found, the current pointer is left at the matched item and the pointer to that item is returned.
 // If no match is found, the current pointer is left beyond the end of the list and a NULL pointer is returned.
-void *ListSearch(list *aList, void *comparator, void *comparisonArg) {
+// Shawn's note: comparator is a pointer to a routine in testbench with parameter data1, data2; comparisonArg is data2
+void *ListSearch(list *aList, int (*comparator)(), void *comparisonArg) {
+    // error check: not active || one of the head/tail missing
+    if (!aList || !aList->boolActive || (!aList->head != !aList->tail))
+        return NULL;
+    // head or tail doesnt belong to the list || curr ptr points to an effective node but does not belong to the list
+    if ((aList->head && aList->head->belong != aList) || (aList->tail && aList->tail->belong != aList) ||
+        (aList->curr >= nodePool && aList->curr < nodePool + MAXNODECOUNT &&
+         aList->curr->belong != aList))
+        return NULL;
 
+    // we do not care where aList->curr is at initially
+    aList->curr=aList->head;
+    while(aList->curr)
+    {
+        // found! keep aList->curr at this node and return data
+        if(aList->curr->data && (*comparator)(aList->curr->data,comparisonArg))
+        {
+            return aList->curr->data;
+        }
+        aList->curr=aList->curr->next;
+    }
+    // not found
+    aList->curr=nodePool + MAXNODECOUNT + 1;
+    return NULL;
 }
+
 
 #ifdef DEBUG
 
@@ -543,10 +615,24 @@ void *ListSearch(list *aList, void *comparator, void *comparisonArg) {
 void printNumNodes() { printf("numNodes is %d\n", numNodes); }
 
 // debugging function used to print numNodes
-void printNumLists() { printf("numLists is %d\n", numLists); }
+void printNumLists() { printf("lastListPos is %d\n", lastListPos); }
+
+// debugging function used to print numNodes
+void printNumSpareLists() {
+    printf("numSpareLists is %d\n", numSpareLists);
+    if (numSpareLists) {
+        int counter = numSpareLists - 1;
+        printf("They are at address(es): ");
+        while (counter != -1) {
+            printf("%p, ", (void *) spareLists[counter--]);
+        }
+        puts("\n");
+    }
+}
 
 // debugging function used to print list
 void listPrint(list *aList) {
+    puts("\n");
     if (!aList) {
         printf("Error: NULL pointer passed into listPrint()!\n");
         return;
@@ -558,7 +644,7 @@ void listPrint(list *aList) {
     printf("Begin Print: \n");
     int i = 0;
     while (tempPtr) {
-        if(tempPtr==aList->tail&&tempPtr->next)
+        if (tempPtr == aList->tail && tempPtr->next)
             printf("\nWARNING: node %d is the recorded tail, but this->next!=NULL!!\n", i);
         printf("number %d: ", i);
 
@@ -587,15 +673,18 @@ void listPrint(list *aList) {
             tempPtr2 = tempPtr2->prev;
             ii++;
         }
-        printf("list->curr is now at position #%d (value: %d)\n\n", ii, *(int *) aList->curr->data);
+        if (aList->curr && aList->curr->data)
+            printf("list->curr is now at position #%d (value: %d)\n", ii, *(int *) aList->curr->data);
+        else
+            printf("list->curr is now at position #%d (data column is NULL)\n", ii);
     } else if (tempPtr2 == nodePool + MAXNODECOUNT)
-        printf("list->curr is currently out of bounds in the HEAD direction\n\n");
+        printf("list->curr is currently out of bounds in the HEAD direction\n");
     else if (tempPtr2 == nodePool + MAXNODECOUNT + 1)
-        printf("list->curr is currently out of bounds in the TAIL direction\n\n");
+        printf("list->curr is currently out of bounds in the TAIL direction\n");
     else if (!tempPtr2)
-        printf("list->curr is NULL\n\n");
+        printf("list->curr is NULL\n");
     else
-        printf("list->curr is invalid. Address:  %d\n\n", (int) tempPtr2);
+        printf("list->curr is invalid. Address:  %d\n", (int) tempPtr2);
 }
 
 #endif  //DEBUG
